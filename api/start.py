@@ -1,46 +1,50 @@
 import os
-import traceback
 import uuid
 
 from flask import Flask, request, send_file
+from loguru import logger
 from waitress import serve
 
+logger.add("/tmp/api.log", rotation="100 MB", retention="10 days")
 
 app = Flask(__name__)
 
 
 @app.route("/convert", methods=["POST"])
-def do_convert():    
+def do_convert():
     file_name_uuid = str(uuid.uuid4())
 
-    post_file = request.files['file']
+    post_file = request.files["file"]
 
     if post_file is None:
         return {"success": False}, 400
 
     try:
-        post_file_ext = post_file.filename.rsplit('.')[-1]
+        post_file_ext = post_file.filename.rsplit(".")[-1]
 
         src_file = f"/tmp/converter/{file_name_uuid}.{post_file_ext}"
         dest_file = f"/tmp/converter/{file_name_uuid}.pdf"
 
         post_file.save(src_file)
 
-        print("Starting file converter - [%s]" % post_file.filename)
-        
+        logger.info("Starting file converter - [%s]" % post_file.filename)
+
         if post_file_ext.lower() in ["pptx", "ppt"]:
             from modules.ppt import convert
+
             convert(src_file, dest_file)
         if post_file_ext.lower() in ["docx", "doc"]:
             from modules.doc import convert
+
             convert(src_file, dest_file)
 
-        print("Finished file converter - [%s]" % post_file.filename)
+        logger.info("Finished file converter - [%s]" % post_file.filename)
 
         return send_file(dest_file, as_attachment=True)
     except Exception as e:
-        print('Failed to execute file converter = [%s]' % post_file)
-        print(traceback.format_exc())
+        logger.error(
+            f"Failed to execute file converter, file - [{post_file}], error - {e}"
+        )
 
         return {"success": False}, 500
 

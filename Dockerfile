@@ -20,7 +20,7 @@ RUN \
 COPY fonts /tmp/fonts
 RUN cd /tmp/fonts && bash install.sh
 
-RUN python3 -m pip --no-cache-dir install pywpsrpc flask waitress
+RUN python3 -m pip --no-cache-dir install pywpsrpc flask waitress loguru
 
 RUN mkdir -p /root/.config/Kingsoft
 
