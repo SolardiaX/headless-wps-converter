@@ -1,5 +1,6 @@
 import os
 import uuid
+from io import BytesIO
 
 from flask import Flask, request, send_file
 from loguru import logger
@@ -40,7 +41,16 @@ def do_convert():
 
         logger.info("Finished file converter - [%s]" % post_file.filename)
 
-        return send_file(dest_file, as_attachment=True)
+        return_data = BytesIO()
+        with open(dest_file, "rb") as fo:
+            return_data.write(fo.read())
+        # (after writing, cursor will be at last byte, so move it to start)
+        return_data.seek(0)
+
+        os.remove(src_file)
+        os.remove(dest_file)
+
+        return send_file(return_data, as_attachment=True)
     except Exception as e:
         logger.error(
             f"Failed to execute file converter, file - [{post_file}], error - {e}"
